@@ -31,6 +31,11 @@
         "class": "Weather"
     },
     {
+        "display_name": "Weather Custom",
+        "id": "weather_custom",
+        "class": "WeatherCustom"
+    },
+    {
         "display_name": "Screenshot",
         "id": "screenshot",
         "class": "Screenshot"
