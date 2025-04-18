@@ -33,7 +33,7 @@
     {
         "display_name": "Weather Custom",
         "id": "weather_custom",
-        "class": "WeatherCustom"
+        "class": "Weather"
     },
     {
         "display_name": "Screenshot",
