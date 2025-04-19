@@ -47,6 +47,7 @@ class Weather(BasePlugin):
 
         weather_data = self.get_weather_data(lat, long)
         air_quality_data = self.get_air_quality(lat, long)
+        location_name = self.get_location_name(lat, long)
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
@@ -55,7 +56,7 @@ class Weather(BasePlugin):
         timezone_str = weather_data.get("timezone", device_config.get_config("timezone", default="UTC"))
         tz = pytz.timezone(timezone_str)
 
-        template_params = self.parse_weather_data(weather_data, air_quality_data, tz)
+        template_params = self.parse_weather_data(weather_data, air_quality_data, tz, location_name)
         template_params["plugin_settings"] = settings
 
         image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
@@ -79,7 +80,24 @@ class Weather(BasePlugin):
             return None
         return response.json()
 
-    def parse_weather_data(self, data, air_quality, tz):
+    def get_location_name(self, lat, lon):
+        try:
+            url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
+            headers = {"User-Agent": "weather-plugin/1.0"}
+            response = requests.get(url, headers=headers)
+            if response.ok:
+                data = response.json()
+                return data.get("address", {}).get("city") or \
+                       data.get("address", {}).get("town") or \
+                       data.get("address", {}).get("village") or \
+                       data.get("display_name")
+            else:
+                logger.warning(f"Failed to get location name: {response.content}")
+        except Exception as e:
+            logger.warning(f"Error fetching location: {e}")
+        return None
+
+    def parse_weather_data(self, data, air_quality, tz, location_name):
         current = data["current"]
         daily = data["daily"]
 
@@ -88,7 +106,7 @@ class Weather(BasePlugin):
 
         return {
             "current_date": dt.strftime("%A, %B %d"),
-            "location": f"{data['latitude']:.2f}, {data['longitude']:.2f}",
+            "location": location_name or f"{data['latitude']:.2f}, {data['longitude']:.2f}",
             "current_temperature": str(round(current["temperature_2m"])),
             "feels_like": "–",
             "temperature_unit": "°C",
